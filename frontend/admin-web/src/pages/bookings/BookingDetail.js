@@ -7,6 +7,8 @@ import {
   Tag,
   Space,
   Button,
+  Popconfirm,
+  message,
   Descriptions,
   Timeline,
   Avatar,
@@ -26,7 +28,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { fetchBookingById } from '../../store/slices/bookingSlice';
+import { fetchBookingById, updateBookingStatus } from '../../store/slices/bookingSlice';
 import { formatCurrency } from '../../utils/format';
 import dayjs from 'dayjs';
 
@@ -39,12 +41,25 @@ const BookingDetail = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const { currentBooking: booking, loading } = useSelector((state) => state.bookings);
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchBookingById(id));
     }
   }, [dispatch, id]);
+
+  const canManage = user?.role === 'admin' || user?.role === 'hotel_owner';
+
+  const handleStatusUpdate = async (newStatus) => {
+    try {
+      await dispatch(updateBookingStatus({ id, status: newStatus })).unwrap();
+      message.success(t('messages.updateSuccess'));
+      dispatch(fetchBookingById(id));
+    } catch (err) {
+      message.error(typeof err === 'string' ? err : t('errors.somethingWentWrong'));
+    }
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -148,12 +163,34 @@ const BookingDetail = () => {
               ← {t('common.back')}
             </Button>
             <Title level={2} style={{ margin: 0 }}>
-              Booking {booking.bookingId}
+              Booking {booking.bookingNumber || booking.bookingId}
             </Title>
             <Tag color={getStatusColor(booking.status)}>
               {t(`bookings.status.${booking.status}`)}
             </Tag>
           </Space>
+        </Col>
+        <Col>
+          {canManage && booking.status === 'pending' && (
+            <Space>
+              <Popconfirm
+                title={t('bookings.confirmBooking')}
+                onConfirm={() => handleStatusUpdate('confirmed')}
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
+              >
+                <Button type="primary" icon={<CheckCircleOutlined />}>{t('bookings.confirm')}</Button>
+              </Popconfirm>
+              <Popconfirm
+                title={t('bookings.cancelBooking')}
+                onConfirm={() => handleStatusUpdate('cancelled')}
+                okText={t('common.yes')}
+                cancelText={t('common.no')}
+              >
+                <Button danger icon={<CloseCircleOutlined />}>{t('bookings.cancel')}</Button>
+              </Popconfirm>
+            </Space>
+          )}
         </Col>
       </Row>
 
@@ -187,7 +224,7 @@ const BookingDetail = () => {
 
         {/* Guest Information */}
         <Col xs={24} lg={12}>
-          <Card title={t('bookings.guestInfo')}>
+          <Card title={t('bookings.customerInfo')}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Space>
                 <Avatar 

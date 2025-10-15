@@ -32,7 +32,8 @@ export const createHotel = createAsyncThunk(
   async (hotelData, { rejectWithValue }) => {
     try {
       const response = await api.post('/hotels', hotelData);
-      return response.data.hotel;
+      // Backend returns { success, message, data }
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create hotel');
     }
@@ -44,7 +45,8 @@ export const updateHotel = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/hotels/${id}`, data);
-      return response.data.hotel;
+      // Backend returns { success, message, data }
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update hotel');
     }

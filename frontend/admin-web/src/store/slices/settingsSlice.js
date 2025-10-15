@@ -7,6 +7,7 @@ export const fetchSettings = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/admin/settings');
+      // Backend returns settings object directly
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch settings');
@@ -135,7 +136,8 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchSettings.fulfilled, (state, action) => {
         state.loading = false;
-        state.settings = { ...state.settings, ...action.payload.settings };
+        // Merge direct settings object
+        state.settings = { ...state.settings, ...action.payload };
       })
       .addCase(fetchSettings.rejected, (state, action) => {
         state.loading = false;

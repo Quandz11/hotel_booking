@@ -18,7 +18,8 @@ export const fetchBookingById = createAsyncThunk(
   'bookings/fetchBookingById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/admin/bookings/${id}`);
+      // Admin fetches a single booking via public bookings endpoint (admin authorized server-side)
+      const response = await api.get(`/bookings/${id}`);
       return response.data.booking;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch booking');
@@ -30,7 +31,8 @@ export const updateBookingStatus = createAsyncThunk(
   'bookings/updateBookingStatus',
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/admin/bookings/${id}/status`, { status });
+      // Use bookings status endpoint (Hotel Owner/Admin permitted)
+      const response = await api.patch(`/bookings/${id}/status`, { status });
       return response.data.booking;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update booking status');
@@ -42,6 +44,7 @@ const bookingSlice = createSlice({
   name: 'bookings',
   initialState: {
     bookings: [],
+    currentBooking: null,
     pagination: {
       page: 1,
       limit: 10,
@@ -103,6 +106,8 @@ const bookingSlice = createSlice({
       })
       // Fetch booking by ID
       .addCase(fetchBookingById.fulfilled, (state, action) => {
+        // Store for detail view and also update list item if present
+        state.currentBooking = action.payload;
         const index = state.bookings.findIndex(booking => booking._id === action.payload._id);
         if (index !== -1) {
           state.bookings[index] = action.payload;

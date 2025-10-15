@@ -487,6 +487,62 @@ async function addSampleBookings(users, hotels, rooms) {
       },
       confirmedAt: new Date()
     },
+    // Pending booking to test acceptance (Grand Saigon)
+    {
+      customer: customer1._id,
+      hotel: grandSaigon._id,
+      room: deluxeRoom._id,
+      bookingNumber: 'BK004' + Date.now(),
+      checkIn: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000),
+      checkOut: new Date(now.getTime() + 24 * 24 * 60 * 60 * 1000),
+      guests: { adults: 2, children: 0 },
+      guestInfo: {
+        firstName: 'Le',
+        lastName: 'Van C',
+        email: 'customer1@gmail.com',
+        phone: '+84904567890',
+        specialRequests: 'Near elevator if possible'
+      },
+      roomPrice: 2500000,
+      nights: 3,
+      subtotal: 7500000,
+      discountAmount: 375000,
+      discountPercentage: 5,
+      taxAmount: 750000,
+      totalAmount: 7875000,
+      currency: 'VND',
+      status: 'pending',
+      paymentStatus: 'pending',
+      paymentMethod: 'vnpay'
+    },
+    // Another pending booking (Beachside Resort)
+    {
+      customer: customer2._id,
+      hotel: beachsideResort._id,
+      room: oceanRoom._id,
+      bookingNumber: 'BK005' + Date.now(),
+      checkIn: new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000),
+      checkOut: new Date(now.getTime() + 32 * 24 * 60 * 60 * 1000),
+      guests: { adults: 2, children: 1 },
+      guestInfo: {
+        firstName: 'Pham',
+        lastName: 'Thi D',
+        email: 'customer2@gmail.com',
+        phone: '+84905678901',
+        specialRequests: 'Quiet room preferred'
+      },
+      roomPrice: 1800000,
+      nights: 4,
+      subtotal: 7200000,
+      discountAmount: 1080000,
+      discountPercentage: 15,
+      taxAmount: 612000,
+      totalAmount: 6732000,
+      currency: 'VND',
+      status: 'pending',
+      paymentStatus: 'pending',
+      paymentMethod: 'vnpay'
+    },
     {
       customer: customer2._id,
       hotel: beachsideResort._id,

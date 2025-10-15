@@ -45,7 +45,6 @@ const HotelForm = () => {
   const { users } = useSelector((state) => state.users);
   const [fileList, setFileList] = useState([]);
   const [amenities, setAmenities] = useState([]);
-  const [newAmenity, setNewAmenity] = useState('');
 
   useEffect(() => {
     // Fetch users for owner selection
@@ -78,6 +77,7 @@ const HotelForm = () => {
 
       if (hotel.amenities) {
         setAmenities(hotel.amenities);
+        form.setFieldsValue({ amenities: hotel.amenities });
       }
 
       if (hotel.images) {
@@ -104,9 +104,9 @@ const HotelForm = () => {
         },
         amenities,
         images: fileList.map(file => ({
-          url: file.url || file.response?.url,
-          public_id: file.response?.public_id,
-        })),
+          url: file.url || file.response?.image?.url,
+          publicId: file.response?.image?.publicId,
+        })).filter(img => !!img.url),
       };
 
       // Remove nested field names
@@ -116,6 +116,11 @@ const HotelForm = () => {
           delete cleanedData[key];
         }
       });
+
+      // If approval status is pending (null) omit the field to satisfy validation
+      if (cleanedData.isApproved === null) {
+        delete cleanedData.isApproved;
+      }
 
       if (isEdit) {
         await dispatch(updateHotel({ id, data: cleanedData })).unwrap();
@@ -132,12 +137,26 @@ const HotelForm = () => {
   };
 
   const handleImageUpload = {
-    name: 'file',
+    name: 'image',
     action: '/api/upload/image',
     listType: 'picture-card',
     fileList,
-    onChange: ({ fileList: newFileList }) => {
-      setFileList(newFileList);
+    multiple: true,
+    accept: 'image/*',
+    maxCount: 8,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    onChange: ({ file, fileList: newFileList }) => {
+      // normalize newly uploaded files to include URL for preview
+      const normalized = newFileList.map((f) => {
+        const next = { ...f };
+        if (!next.url && next.response?.image?.url) {
+          next.url = next.response.image.url;
+        }
+        return next;
+      });
+      setFileList(normalized);
     },
     onPreview: async (file) => {
       let src = file.url;
@@ -162,16 +181,24 @@ const HotelForm = () => {
     </div>
   );
 
-  const addAmenity = () => {
-    if (newAmenity && !amenities.includes(newAmenity)) {
-      setAmenities([...amenities, newAmenity]);
-      setNewAmenity('');
-    }
-  };
-
-  const removeAmenity = (amenityToRemove) => {
-    setAmenities(amenities.filter(amenity => amenity !== amenityToRemove));
-  };
+  const HOTEL_AMENITY_OPTIONS = [
+    'wifi',
+    'parking',
+    'pool',
+    'gym',
+    'spa',
+    'restaurant',
+    'bar',
+    'room_service',
+    'concierge',
+    'laundry',
+    'business_center',
+    'conference_room',
+    'airport_shuttle',
+    'pet_friendly',
+    'air_conditioning',
+    'elevator',
+  ];
 
   const countryOptions = [
     'Vietnam',
@@ -395,36 +422,21 @@ const HotelForm = () => {
           {/* Amenities */}
           <Col xs={24} lg={12}>
             <Card title={t('hotels.amenities')}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Row gutter={8}>
-                  <Col flex={1}>
-                    <Input
-                      value={newAmenity}
-                      onChange={(e) => setNewAmenity(e.target.value)}
-                      placeholder="Add amenity"
-                      onPressEnter={addAmenity}
-                    />
-                  </Col>
-                  <Col>
-                    <Button onClick={addAmenity} icon={<PlusOutlined />}>
-                      Add
-                    </Button>
-                  </Col>
-                </Row>
-
-                <div>
-                  {amenities.map((amenity, index) => (
-                    <Tag
-                      key={index}
-                      closable
-                      onClose={() => removeAmenity(amenity)}
-                      style={{ marginBottom: 8 }}
-                    >
-                      {amenity}
-                    </Tag>
+              <Form.Item name="amenities" rules={[]}> 
+                <Select
+                  mode="multiple"
+                  placeholder="Select amenities"
+                  value={amenities}
+                  onChange={(vals) => setAmenities(vals)}
+                  optionFilterProp="children"
+                >
+                  {HOTEL_AMENITY_OPTIONS.map((opt) => (
+                    <Option key={opt} value={opt}>
+                      {opt}
+                    </Option>
                   ))}
-                </div>
-              </Space>
+                </Select>
+              </Form.Item>
             </Card>
           </Col>
 

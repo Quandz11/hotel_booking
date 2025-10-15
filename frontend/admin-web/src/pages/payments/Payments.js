@@ -32,6 +32,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { formatCurrency } from '../../utils/format';
+import api from '../../services/api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -51,73 +52,68 @@ const Payments = () => {
     dateRange: null,
   });
 
-  // Mock data for now - replace with API calls
-  const mockPayments = [
-    {
-      id: 'PAY_001',
-      bookingId: 'BK_001',
-      amount: 1500000,
-      currency: 'VND',
-      status: 'completed',
-      method: 'credit_card',
-      gatewayTransactionId: 'TX_123456789',
-      customerName: 'Nguyen Van A',
-      customerEmail: 'customer@example.com',
-      hotelName: 'Luxury Hotel Saigon',
-      createdAt: '2025-08-25T10:30:00Z',
-      completedAt: '2025-08-25T10:32:15Z',
-      refundedAmount: 0,
-    },
-    {
-      id: 'PAY_002',
-      bookingId: 'BK_002',
-      amount: 2500000,
-      currency: 'VND',
-      status: 'pending',
-      method: 'bank_transfer',
-      gatewayTransactionId: 'TX_987654321',
-      customerName: 'Tran Thi B',
-      customerEmail: 'customer2@example.com',
-      hotelName: 'Beach Resort Da Nang',
-      createdAt: '2025-08-26T14:20:00Z',
-      completedAt: null,
-      refundedAmount: 0,
-    },
-    {
-      id: 'PAY_003',
-      bookingId: 'BK_003',
-      amount: 800000,
-      currency: 'VND',
-      status: 'failed',
-      method: 'credit_card',
-      gatewayTransactionId: 'TX_456789123',
-      customerName: 'Le Van C',
-      customerEmail: 'customer3@example.com',
-      hotelName: 'City Hotel Hanoi',
-      createdAt: '2025-08-27T16:45:00Z',
-      completedAt: null,
-      refundedAmount: 0,
-    },
-    {
-      id: 'PAY_004',
-      bookingId: 'BK_004',
-      amount: 1200000,
-      currency: 'VND',
-      status: 'refunded',
-      method: 'credit_card',
-      gatewayTransactionId: 'TX_789123456',
-      customerName: 'Pham Thi D',
-      customerEmail: 'customer4@example.com',
-      hotelName: 'Mountain Lodge Sapa',
-      createdAt: '2025-08-23T09:15:00Z',
-      completedAt: '2025-08-23T09:17:30Z',
-      refundedAmount: 1200000,
-    },
-  ];
+  const load = async () => {
+    try {
+      setLoading(true);
+      // Fetch recent bookings, include paid and pending
+      const { data } = await api.get('/admin/bookings', {
+        params: { limit: 100 },
+      });
+      const items = (data.bookings || []).map((b) => ({
+        id: b.transactionId || b.paymentDetails?.vnp_TransactionNo || b._id,
+        bookingId: b.bookingNumber || b._id,
+        amount: b.totalAmount,
+        currency: b.currency || 'VND',
+        status: mapPaymentStatus(b.paymentStatus),
+        method: mapPaymentMethod(b.paymentMethod),
+        gatewayTransactionId: b.paymentDetails?.vnp_TransactionNo || b.transactionId,
+        customerName: `${b.customer?.firstName || ''} ${b.customer?.lastName || ''}`.trim(),
+        customerEmail: b.customer?.email,
+        hotelName: b.hotel?.name,
+        createdAt: b.createdAt,
+        completedAt: b.paidAt || null,
+        refundedAmount: b.paymentStatus === 'refunded' ? (b.refundAmount || 0) : 0,
+      }));
+      setPayments(items);
+    } catch (e) {
+      message.error(e?.response?.data?.message || 'Failed to load payments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Load payments from bookings as there is no dedicated payments list endpoint
   useEffect(() => {
-    setPayments(mockPayments);
+    load();
   }, []);
+
+  const mapPaymentStatus = (status) => {
+    switch (status) {
+      case 'paid':
+        return 'completed';
+      case 'pending':
+        return 'pending';
+      case 'failed':
+        return 'failed';
+      case 'refunded':
+        return 'refunded';
+      default:
+        return 'pending';
+    }
+  };
+
+  const mapPaymentMethod = (method) => {
+    switch (method) {
+      case 'vnpay':
+        return 'e_wallet';
+      case 'stripe':
+        return 'credit_card';
+      case 'cash':
+        return 'cash';
+      default:
+        return 'credit_card';
+    }
+  };
 
   const getStatusTag = (status) => {
     const statusConfig = {
@@ -283,7 +279,8 @@ const Payments = () => {
             <Button 
               type="primary" 
               icon={<ReloadOutlined />}
-              onClick={() => setPayments(mockPayments)}
+              onClick={load}
+              loading={loading}
             >
               {t('common.refresh')}
             </Button>

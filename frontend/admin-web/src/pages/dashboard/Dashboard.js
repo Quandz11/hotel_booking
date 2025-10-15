@@ -234,13 +234,13 @@ const Dashboard = () => {
             </div>
             <div style={{ marginBottom: 16 }}>
               <Row justify="space-between">
-                <Text strong>Active Hotels</Text>
+                <Text strong>{t('reports.overview.activeHotels')}</Text>
                 <Tag color="green">{overview?.approvedHotels || 0}</Tag>
               </Row>
             </div>
             <div>
               <Row justify="space-between">
-                <Text strong>Total Rooms</Text>
+                <Text strong>{t('hotels.totalRooms')}</Text>
                 <Tag color="purple">{overview?.totalRooms || 0}</Tag>
               </Row>
             </div>
