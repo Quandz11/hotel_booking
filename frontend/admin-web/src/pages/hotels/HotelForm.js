@@ -28,6 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { createHotel, updateHotel, fetchHotelById } from '../../store/slices/hotelSlice';
 import { fetchUsers } from '../../store/slices/userSlice';
+import { showFormErrors } from '../../utils/apiError';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -132,9 +133,9 @@ const HotelForm = () => {
 
       navigate('/hotels');
     } catch (error) {
-      message.error(error);
-    }
-  };
+        showFormErrors(form, error, t('errors.validationError'));
+      }
+    };
 
   const handleImageUpload = {
     name: 'image',

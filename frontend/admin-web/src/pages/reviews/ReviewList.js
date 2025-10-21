@@ -116,7 +116,7 @@ const ReviewList = () => {
   const getStatusText = (isApproved) => {
     if (isApproved === true) return t('reviews.approved');
     if (isApproved === false) return t('reviews.rejected');
-    return t('reviews.pending');
+    return t('reviews.rejected');
   };
 
   const getRatingColor = (rating) => {
@@ -370,7 +370,6 @@ const ReviewList = () => {
             >
               <Option value={true}>{t('reviews.approved')}</Option>
               <Option value={false}>{t('reviews.rejected')}</Option>
-              <Option value={null}>{t('reviews.pending')}</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={4}>

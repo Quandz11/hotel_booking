@@ -35,7 +35,7 @@ export const createHotel = createAsyncThunk(
       // Backend returns { success, message, data }
       return response.data.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create hotel');
+      return rejectWithValue(error.response?.data || { message: 'Failed to create hotel' });
     }
   }
 );
@@ -48,7 +48,7 @@ export const updateHotel = createAsyncThunk(
       // Backend returns { success, message, data }
       return response.data.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update hotel');
+      return rejectWithValue(error.response?.data || { message: 'Failed to update hotel' });
     }
   }
 );

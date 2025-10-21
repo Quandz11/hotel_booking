@@ -105,7 +105,9 @@ const BookingList = () => {
       pending: 'warning',
       confirmed: 'success',
       cancelled: 'error',
-      completed: 'default',
+      checked_in: 'processing',
+      checked_out: 'default',
+      no_show: 'default',
     };
     return colors[status] || 'default';
   };
@@ -123,24 +125,24 @@ const BookingList = () => {
   const columns = [
     {
       title: t('bookings.bookingId'),
-      dataIndex: 'bookingId',
-      key: 'bookingId',
-      render: (id) => <Text code>{id}</Text>,
+      dataIndex: 'bookingNumber',
+      key: 'bookingNumber',
+      render: (bookingNumber, record) => <Text code>{bookingNumber || record?._id}</Text>,
       width: 120,
     },
     {
       title: t('bookings.guest'),
-      dataIndex: 'user',
-      key: 'user',
-      render: (user) => (
+      dataIndex: 'customer',
+      key: 'customer',
+      render: (customer, record) => (
         <Space>
           <UserOutlined />
           <div>
             <div style={{ fontWeight: 'bold' }}>
-              {user?.firstName} {user?.lastName}
+              {(customer?.firstName || record?.guestInfo?.firstName || '')} {(customer?.lastName || record?.guestInfo?.lastName || '')}
             </div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {user?.email}
+              {customer?.email || record?.guestInfo?.email}
             </Text>
           </div>
         </Space>
@@ -184,13 +186,13 @@ const BookingList = () => {
       render: (_, record) => (
         <div>
           <div style={{ fontSize: 12 }}>
-            <CalendarOutlined /> Check-in: {dayjs(record.checkInDate).format('DD/MM/YY')}
+            <CalendarOutlined /> Check-in: {dayjs(record.checkIn).format('DD/MM/YY')}
           </div>
           <div style={{ fontSize: 12 }}>
-            <CalendarOutlined /> Check-out: {dayjs(record.checkOutDate).format('DD/MM/YY')}
+            <CalendarOutlined /> Check-out: {dayjs(record.checkOut).format('DD/MM/YY')}
           </div>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            {dayjs(record.checkOutDate).diff(dayjs(record.checkInDate), 'day')} nights
+            {dayjs(record.checkOut).diff(dayjs(record.checkIn), 'day')} nights
           </Text>
         </div>
       ),
@@ -288,11 +290,11 @@ const BookingList = () => {
             </>
           )}
 
-          {record.status === 'confirmed' && dayjs().isAfter(dayjs(record.checkOutDate)) && (
+          {record.status === 'confirmed' && dayjs().isAfter(dayjs(record.checkOut)) && (
             <Tooltip title={t('bookings.markCompleted')}>
               <Popconfirm
                 title={t('bookings.markCompletedConfirm')}
-                onConfirm={() => handleStatusUpdate(record, 'completed')}
+                onConfirm={() => handleStatusUpdate(record, 'checked_out')}
                 okText={t('common.yes')}
                 cancelText={t('common.no')}
               >
@@ -384,7 +386,9 @@ const BookingList = () => {
               <Option value="pending">{t('bookings.status.pending')}</Option>
               <Option value="confirmed">{t('bookings.status.confirmed')}</Option>
               <Option value="cancelled">{t('bookings.status.cancelled')}</Option>
-              <Option value="completed">{t('bookings.status.completed')}</Option>
+              <Option value="checked_in">{t('bookings.status.checked_in')}</Option>
+              <Option value="checked_out">{t('bookings.status.checked_out')}</Option>
+              <Option value="no_show">{t('bookings.status.no_show')}</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={4}>

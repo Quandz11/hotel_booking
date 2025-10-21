@@ -36,7 +36,7 @@ export const createUser = createAsyncThunk(
       const response = await api.post('/admin/users', userData);
       return response.data.user;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create user');
+      return rejectWithValue(error.response?.data || { message: 'Failed to create user' });
     }
   }
 );
@@ -48,7 +48,7 @@ export const updateUser = createAsyncThunk(
       const response = await api.put(`/admin/users/${id}`, data);
       return response.data.user;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update user');
+      return rejectWithValue(error.response?.data || { message: 'Failed to update user' });
     }
   }
 );

@@ -135,6 +135,7 @@ router.get('/users', authenticate, authorize('admin'), [
   query('role').optional().isIn(['customer', 'hotel_owner', 'admin']),
   query('isActive').optional().isBoolean(),
   query('isApproved').optional().isBoolean(),
+  query('isEmailVerified').optional().isBoolean(),
   query('search').optional().trim()
 ], validate, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -146,6 +147,7 @@ router.get('/users', authenticate, authorize('admin'), [
   if (req.query.role) query.role = req.query.role;
   if (req.query.isActive !== undefined) query.isActive = req.query.isActive === 'true';
   if (req.query.isApproved !== undefined) query.isApproved = req.query.isApproved === 'true';
+  if (req.query.isEmailVerified !== undefined) query.isEmailVerified = req.query.isEmailVerified === 'true';
   
   if (req.query.search) {
     query.$or = [
@@ -358,6 +360,78 @@ router.post('/users/test', [
   });
 }));
 
+// @desc    Create new user
+// @route   POST /api/admin/users
+// @access  Private (Admin only)
+router.post('/users', authenticate, authorize('admin'), [
+  body('firstName').notEmpty().trim().withMessage('First name is required'),
+  body('lastName').notEmpty().trim().withMessage('Last name is required'),
+  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('role').isIn(['customer', 'hotel_owner', 'admin']).withMessage('Invalid role'),
+  body('phone').optional().trim(),
+  body('isActive').optional().isBoolean(),
+  body('isApproved').optional().isBoolean(),
+  body('isEmailVerified').optional().isBoolean()
+], validate, asyncHandler(async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    role,
+    phone,
+    isActive = true,
+    isApproved = role === 'hotel_owner' ? false : true,
+    isEmailVerified = true,
+    address,
+    dateOfBirth,
+    gender,
+    bio
+  } = req.body;
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({
+      message: 'Validation failed',
+      errors: [{ field: 'email', message: 'Email already in use', value: email }]
+    });
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Create user document
+  const user = new User({
+    firstName,
+    lastName,
+    email,
+    password: hashedPassword,
+    role,
+    phone,
+    isActive,
+    isApproved,
+    isEmailVerified,
+    address,
+    // Optional extra fields not defined in schema will be ignored by Mongoose default strict mode
+    dateOfBirth,
+    gender,
+    bio
+  });
+
+  await user.save();
+
+  const userResponse = user.toObject();
+  delete userResponse.password;
+  delete userResponse.refreshToken;
+
+  res.status(201).json({
+    message: 'User created successfully',
+    user: userResponse
+  });
+}));
+
 // @desc    Update user
 // @route   PUT /api/admin/users/:id
 // @access  Private (Admin only)
@@ -470,6 +544,7 @@ router.get('/hotels', authenticate, authorize('admin'), [
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('isApproved').optional().isBoolean(),
   query('isActive').optional().isBoolean(),
+  query('starRating').optional().isInt({ min: 3, max: 5 }),
   query('search').optional().trim()
 ], validate, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -480,6 +555,7 @@ router.get('/hotels', authenticate, authorize('admin'), [
   
   if (req.query.isApproved !== undefined) query.isApproved = req.query.isApproved === 'true';
   if (req.query.isActive !== undefined) query.isActive = req.query.isActive === 'true';
+  if (req.query.starRating !== undefined) query.starRating = parseInt(req.query.starRating);
   
   if (req.query.search) {
     query.$or = [
@@ -505,6 +581,19 @@ router.get('/hotels', authenticate, authorize('admin'), [
       pages: Math.ceil(total / limit)
     }
   });
+}));
+
+// @desc    Get rooms for a hotel (Admin)
+// @route   GET /api/admin/hotels/:id/rooms
+// @access  Private (Admin only)
+router.get('/hotels/:id/rooms', authenticate, authorize('admin'), asyncHandler(async (req, res) => {
+  const hotelId = req.params.id;
+  const hotel = await Hotel.findById(hotelId);
+  if (!hotel) {
+    return res.status(404).json({ message: 'Hotel not found' });
+  }
+  const rooms = await require('../models/Room').find({ hotel: hotelId }).sort({ name: 1 });
+  res.json({ rooms });
 }));
 
 // @desc    Approve/Reject hotel
@@ -553,7 +642,8 @@ router.get('/bookings', authenticate, authorize('admin'), [
   query('status').optional().isIn(['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out', 'no_show']),
   query('paymentStatus').optional().isIn(['pending', 'paid', 'failed', 'refunded', 'partial_refund']),
   query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601()
+  query('endDate').optional().isISO8601(),
+  query('search').optional().trim()
 ], validate, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
@@ -571,6 +661,15 @@ router.get('/bookings', authenticate, authorize('admin'), [
     };
   }
   
+  // Basic search on bookingNumber or transactionId (booking/customer/hotel text requires aggregation)
+  if (req.query.search) {
+    const regex = new RegExp(req.query.search, 'i');
+    query.$or = [
+      { bookingNumber: { $regex: regex } },
+      { transactionId: { $regex: regex } }
+    ];
+  }
+
   const bookings = await Booking.find(query)
     .populate('customer', 'firstName lastName email')
     .populate('hotel', 'name')
@@ -600,7 +699,10 @@ router.get('/reviews', authenticate, authorize('admin'), [
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('isApproved').optional().isBoolean(),
   query('isVisible').optional().isBoolean(),
-  query('flagged').optional().isBoolean()
+  query('flagged').optional().isBoolean(),
+  query('rating').optional().isInt({ min: 1, max: 5 }),
+  query('search').optional().trim(),
+  query('sortBy').optional().isIn(['newest','oldest','highest_rating','lowest_rating'])
 ], validate, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
@@ -611,11 +713,34 @@ router.get('/reviews', authenticate, authorize('admin'), [
   if (req.query.isApproved !== undefined) query.isApproved = req.query.isApproved === 'true';
   if (req.query.isVisible !== undefined) query.isVisible = req.query.isVisible === 'true';
   if (req.query.flagged === 'true') query.flags = { $exists: true, $not: { $size: 0 } };
-  
+  if (req.query.rating !== undefined) query.rating = parseInt(req.query.rating);
+  if (req.query.search) {
+    const regex = new RegExp(req.query.search, 'i');
+    query.$or = [
+      { title: { $regex: regex } },
+      { comment: { $regex: regex } }
+    ];
+  }
+
+  let sort = { createdAt: -1 };
+  switch (req.query.sortBy) {
+    case 'oldest':
+      sort = { createdAt: 1 };
+      break;
+    case 'highest_rating':
+      sort = { rating: -1 };
+      break;
+    case 'lowest_rating':
+      sort = { rating: 1 };
+      break;
+    default:
+      sort = { createdAt: -1 };
+  }
+
   const reviews = await Review.find(query)
     .populate('customer', 'firstName lastName')
     .populate('hotel', 'name')
-    .sort({ createdAt: -1 })
+    .sort(sort)
     .skip(skip)
     .limit(limit);
   

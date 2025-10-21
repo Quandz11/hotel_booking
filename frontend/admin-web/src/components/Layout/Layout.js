@@ -16,6 +16,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   GlobalOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { logout } from '../../store/slices/authSlice';
 
@@ -39,6 +40,11 @@ const Layout = ({ children }) => {
       key: '/hotels',
       icon: <HomeOutlined />,
       label: t('navigation.hotels'),
+    },
+    {
+      key: '/rooms',
+      icon: <AppstoreOutlined />,
+      label: t('navigation.rooms'),
     },
     {
       key: '/users',

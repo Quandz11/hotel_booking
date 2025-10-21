@@ -55,19 +55,32 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
+    const fields = Object.keys(err.keyValue || {});
     const message = 'Duplicate field value entered';
-    error = { message, statusCode: 400 };
+    const errors = fields.map((field) => ({
+      field,
+      message: `${field} already exists`,
+      value: err.keyValue[field]
+    }));
+    error = { message, statusCode: 400, ...(errors.length ? { errors } : {}) };
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
-    error = { message, statusCode: 400 };
+    const details = Object.values(err.errors || {});
+    const message = details.map(val => val.message).join(', ');
+    const errors = details.map((val) => ({
+      field: val.path || val.properties?.path,
+      message: val.message,
+      value: val.value
+    }));
+    error = { message, statusCode: 400, ...(errors.length ? { errors } : {}) };
   }
 
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Server Error',
+    ...(error.errors ? { errors: error.errors } : {}),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };

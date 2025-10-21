@@ -97,7 +97,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @desc    Create new room
 // @route   POST /api/rooms
 // @access  Private (Hotel Owner)
-router.post('/', authenticate, authorize('hotel_owner'), requireApprovedHotelOwner, roomValidation, validate, asyncHandler(async (req, res) => {
+router.post('/', authenticate, authorize('hotel_owner', 'admin'), roomValidation, validate, asyncHandler(async (req, res) => {
   const { hotel: hotelId } = req.body;
   
   // Verify hotel ownership
@@ -106,8 +106,14 @@ router.post('/', authenticate, authorize('hotel_owner'), requireApprovedHotelOwn
     return res.status(404).json({ message: 'Hotel not found' });
   }
   
-  if (hotel.owner.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: 'Access denied. You can only add rooms to your own hotels.' });
+  // If admin: allow creating room for any hotel
+  if (req.user.role !== 'admin') {
+    if (hotel.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied. You can only add rooms to your own hotels.' });
+    }
+    if (!req.user.isApproved) {
+      return res.status(403).json({ message: 'Your hotel owner account is pending approval.' });
+    }
   }
   
   const room = new Room(req.body);

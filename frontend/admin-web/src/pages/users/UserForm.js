@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { createUser, updateUser, fetchUserById, clearCurrentUser } from '../../store/slices/userSlice';
 import dayjs from 'dayjs';
+import { showFormErrors } from '../../utils/apiError';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -134,7 +135,7 @@ const UserForm = () => {
 
       navigate('/users');
     } catch (error) {
-      message.error(error);
+      showFormErrors(form, error, t('errors.validationError'));
     }
   };
 

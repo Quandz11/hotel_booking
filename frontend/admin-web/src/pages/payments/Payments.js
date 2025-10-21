@@ -239,17 +239,25 @@ const Payments = () => {
   };
 
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = !filters.search || 
-      payment.id.toLowerCase().includes(filters.search.toLowerCase()) ||
-      payment.customerName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      payment.customerEmail.toLowerCase().includes(filters.search.toLowerCase());
-    
+    const q = (filters.search || '').toString().toLowerCase();
+    const idStr = (payment.id || '').toString().toLowerCase();
+    const nameStr = (payment.customerName || '').toLowerCase();
+    const emailStr = (payment.customerEmail || '').toLowerCase();
+
+    const matchesSearch = !filters.search ||
+      idStr.includes(q) ||
+      nameStr.includes(q) ||
+      emailStr.includes(q);
+
     const matchesStatus = !filters.status || payment.status === filters.status;
     const matchesMethod = !filters.method || payment.method === filters.method;
-    
-    const matchesDateRange = !filters.dateRange || 
-      (dayjs(payment.createdAt).isAfter(filters.dateRange[0]) && 
-       dayjs(payment.createdAt).isBefore(filters.dateRange[1]));
+
+    const created = dayjs(payment.createdAt);
+    const matchesDateRange = !filters.dateRange || (
+      created.isSame(filters.dateRange[0], 'day') || created.isAfter(filters.dateRange[0])
+    ) && (
+      created.isSame(filters.dateRange[1], 'day') || created.isBefore(filters.dateRange[1])
+    );
 
     return matchesSearch && matchesStatus && matchesMethod && matchesDateRange;
   });
@@ -352,10 +360,10 @@ const Payments = () => {
               style={{ width: '100%' }}
               allowClear
             >
-              <Option value="completed">{t('paymentsManagement.status.completed')}</Option>
-              <Option value="pending">{t('paymentsManagement.status.pending')}</Option>
-              <Option value="failed">{t('paymentsManagement.status.failed')}</Option>
-              <Option value="refunded">{t('paymentsManagement.status.refunded')}</Option>
+              <Option value="completed">{t('paymentsManagement.paymentStatus.completed')}</Option>
+              <Option value="pending">{t('paymentsManagement.paymentStatus.pending')}</Option>
+              <Option value="failed">{t('paymentsManagement.paymentStatus.failed')}</Option>
+              <Option value="refunded">{t('paymentsManagement.paymentStatus.refunded')}</Option>
             </Select>
           </Col>
           <Col xs={24} sm={8} md={4}>
@@ -366,10 +374,9 @@ const Payments = () => {
               style={{ width: '100%' }}
               allowClear
             >
-              <Option value="credit_card">{t('paymentsManagement.method.creditCard')}</Option>
-              <Option value="bank_transfer">{t('paymentsManagement.method.bankTransfer')}</Option>
-              <Option value="e_wallet">{t('paymentsManagement.method.eWallet')}</Option>
-              <Option value="cash">{t('paymentsManagement.method.cash')}</Option>
+              <Option value="credit_card">{t('paymentsManagement.paymentMethod.creditCard')}</Option>
+              <Option value="e_wallet">{t('paymentsManagement.paymentMethod.eWallet')}</Option>
+              <Option value="cash">{t('paymentsManagement.paymentMethod.cash')}</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={6}>

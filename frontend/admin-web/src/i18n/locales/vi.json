@@ -389,6 +389,42 @@
       "refundedAmount": "Số tiền hoàn lại"
     }
   },
+  "rooms": {
+    "title": "Phòng",
+    "addRoom": "Thêm phòng",
+    "editRoom": "Sửa phòng",
+    "name": "Tên",
+    "type": "Loại",
+    "description": "Mô tả",
+    "maxGuests": "Số khách tối đa",
+    "beds": "Giường",
+    "bedType": "Loại giường",
+    "bedCount": "Số giường",
+    "totalRooms": "Tổng số phòng",
+    "basePrice": "Giá cơ bản",
+    "weekendPrice": "Giá cuối tuần",
+    "currency": "Tiền tệ",
+    "status": "Trạng thái",
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động",
+    "activeStatus": "Hoạt động",
+    "discountPercent": "Khuyến mãi %",
+    "specialOfferDescription": "Mô tả khuyến mãi",
+    "amenities": "Tiện nghi",
+    "selectHotel": "Chọn khách sạn để quản lý phòng",
+    "manageRooms": "Quản lý phòng",
+    "createSuccess": "Tạo phòng thành công",
+    "updateSuccess": "Cập nhật phòng thành công",
+    "images": "Hình ảnh",
+    "uploadImages": "Tải ảnh lên",
+    "searchPlaceholder": "Tìm kiếm phòng...",
+    "filter": {
+      "status": "Lọc theo trạng thái",
+      "type": "Lọc theo loại",
+      "minPrice": "Giá tối thiểu",
+      "maxPrice": "Giá tối đa"
+    }
+  },
   "reports": {
     "title": "Báo cáo & Phân tích",
     "revenueReport": "Báo cáo doanh thu",

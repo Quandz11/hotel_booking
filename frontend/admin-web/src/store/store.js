@@ -7,6 +7,7 @@ import reviewSlice from './slices/reviewSlice';
 import dashboardSlice from './slices/dashboardSlice';
 import settingsSlice from './slices/settingsSlice';
 import reportSlice from './slices/reportSlice';
+import roomSlice from './slices/roomSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
     users: userSlice,
     bookings: bookingSlice,
     reviews: reviewSlice,
+    rooms: roomSlice,
     dashboard: dashboardSlice,
     settings: settingsSlice,
     reports: reportSlice,

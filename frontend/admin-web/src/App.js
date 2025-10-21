@@ -13,6 +13,7 @@ import Reviews from './pages/reviews/Reviews';
 import Payments from './pages/payments/Payments';
 import Reports from './pages/reports/Reports';
 import Settings from './pages/settings/Settings';
+import Rooms from './pages/rooms/Rooms';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import './App.css';
 
@@ -61,6 +62,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Hotels />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/rooms/*" 
+          element={
+            <ProtectedRoute>
+              <Rooms />
             </ProtectedRoute>
           } 
         />

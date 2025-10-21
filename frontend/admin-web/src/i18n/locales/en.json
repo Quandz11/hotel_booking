@@ -390,6 +390,42 @@
       "refundedAmount": "Refunded Amount"
     }
   },
+  "rooms": {
+    "title": "Rooms",
+    "addRoom": "Add Room",
+    "editRoom": "Edit Room",
+    "name": "Name",
+    "type": "Type",
+    "description": "Description",
+    "maxGuests": "Max Guests",
+    "beds": "Beds",
+    "bedType": "Bed Type",
+    "bedCount": "Bed Count",
+    "totalRooms": "Total Rooms",
+    "basePrice": "Base Price",
+    "weekendPrice": "Weekend Price",
+    "currency": "Currency",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activeStatus": "Active",
+    "discountPercent": "Discount %",
+    "specialOfferDescription": "Special Offer Description",
+    "amenities": "Amenities",
+    "selectHotel": "Select a hotel to manage rooms",
+    "manageRooms": "Manage Rooms",
+    "createSuccess": "Room created successfully",
+    "updateSuccess": "Room updated successfully",
+    "images": "Images",
+    "uploadImages": "Upload Images",
+    "searchPlaceholder": "Search rooms...",
+    "filter": {
+      "status": "Filter by Status",
+      "type": "Filter by Type",
+      "minPrice": "Min Price",
+      "maxPrice": "Max Price"
+    }
+  },
   "reports": {
     "title": "Reports & Analytics",
     "revenueReport": "Revenue Report",

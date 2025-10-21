@@ -122,14 +122,14 @@ const HotelList = () => {
   const getStatusColor = (isApproved, isActive) => {
     if (!isActive) return 'default';
     if (isApproved === true) return 'success';
-    if (isApproved === false) return 'error';
+    if (isApproved === false) return 'warning';
     return 'warning';
   };
 
   const getStatusText = (isApproved, isActive) => {
-    if (!isActive) return 'Inactive';
+    if (!isActive) return t('hotels.inactive') || 'Inactive';
     if (isApproved === true) return t('hotels.approved');
-    if (isApproved === false) return t('hotels.rejected');
+    if (isApproved === false) return t('hotels.pending');
     return t('hotels.pending');
   };
 
@@ -225,6 +225,13 @@ const HotelList = () => {
                           onClick={() => navigate(`/hotels/${record._id}`)}
                         />
                       </Tooltip>
+                      <Tooltip title="Manage Rooms">
+                        <Button
+                          size="small"
+                          icon={<HomeOutlined />}
+                          onClick={() => navigate(`/hotels/${record._id}/rooms`)}
+                        />
+                      </Tooltip>
                       <Tooltip title={t('hotels.editHotel')}>
                         <Button
                           size="small"
@@ -233,7 +240,7 @@ const HotelList = () => {
                         />
                       </Tooltip>
                       
-                      {record.isApproved === null && (
+                      {record.isApproved === false && (
                         <>
                           <Tooltip title={t('hotels.approve')}>
                             <Popconfirm
@@ -337,8 +344,7 @@ const HotelList = () => {
               onChange={(value) => handleFilterChange('isApproved', value)}
             >
               <Option value={true}>{t('hotels.approved')}</Option>
-              <Option value={false}>{t('hotels.rejected')}</Option>
-              <Option value={null}>{t('hotels.pending')}</Option>
+              <Option value={false}>{t('hotels.pending')}</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={4}>
