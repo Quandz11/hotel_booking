@@ -38,9 +38,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _initializePaymentService();
     
-    if (widget.paymentMethod == 'vnpay') {
-      _loadBanks();
-    }
+    // Bank selection removed for VNPay; skip loading banks
+    // if (widget.paymentMethod == 'vnpay') {
+    //   _loadBanks();
+    // }
   }
   
   Future<void> _initializePaymentService() async {
@@ -69,15 +70,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _proceedToPayment() async {
     final l10n = AppLocalizations.of(context)!;
     
-    if (widget.paymentMethod != 'vnpay') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.stripePaymentNotImplemented),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    // Only VNPay is supported; proceed without checking other methods
 
     setState(() {
       _isLoading = true;
@@ -86,7 +79,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final paymentRequest = PaymentRequest(
         bookingId: widget.booking.id,
-        bankCode: _selectedBankCode,
+        bankCode: null,
         language: 'vn',
       );
 
@@ -160,11 +153,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildPaymentMethodCard(),
             const SizedBox(height: 16),
 
-            // Bank Selection (for VNPay)
-            if (widget.paymentMethod == 'vnpay') ...[
-              _buildBankSelectionCard(),
-              const SizedBox(height: 16),
-            ],
+            // Bank Selection removed for VNPay
 
             // Payment Instructions
             _buildPaymentInstructionsCard(),

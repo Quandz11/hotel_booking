@@ -128,36 +128,39 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.hotel),
-            onPressed: () => _navigateToRoomManagement(),
-            tooltip: 'Manage Rooms',
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _editHotel(),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'delete':
-                  _confirmDeleteHotel();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    const Icon(Icons.delete, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Text(l10n.delete),
-                  ],
+          if (Provider.of<HotelOwnerProvider>(context, listen: false)
+              .isOwnedHotelId(widget.hotelId)) ...[
+            IconButton(
+              icon: const Icon(Icons.hotel),
+              onPressed: () => _navigateToRoomManagement(),
+              tooltip: 'Manage Rooms',
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _editHotel(),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'delete':
+                    _confirmDeleteHotel();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.delete, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Text(l10n.delete),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
       body: RefreshIndicator(
@@ -742,12 +745,17 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   }
 
   void _navigateToRoomManagement() {
-    if (_hotel != null) {
+    final provider = Provider.of<HotelOwnerProvider>(context, listen: false);
+    if (_hotel != null && provider.isOwnedHotelId(_hotel!.id)) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => RoomManagementScreen(hotel: _hotel!),
         ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn không có quyền quản lý khách sạn này')),
       );
     }
   }

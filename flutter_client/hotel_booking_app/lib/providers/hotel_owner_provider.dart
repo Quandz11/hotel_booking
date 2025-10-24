@@ -29,6 +29,15 @@ class HotelOwnerProvider extends ChangeNotifier {
     return _allRooms.where((room) => room.hotelId == hotelId).toList();
   }
 
+  // Ownership helpers
+  bool isOwnedHotelId(String hotelId) {
+    return _ownedHotels.any((h) => h.id == hotelId);
+  }
+
+  bool isOwnedRoom(Room room) {
+    return isOwnedHotelId(room.hotelId);
+  }
+
   // Get bookings for specific hotel
   List<Booking> getBookingsForHotel(String hotelId) {
     return _allBookings.where((booking) => booking.hotelId == hotelId).toList();
@@ -299,8 +308,11 @@ class HotelOwnerProvider extends ChangeNotifier {
 
   Future<List<Room>> getRoomsByHotel(String hotelId, {String? checkIn, String? checkOut, int? guests}) async {
     try {
-      final rooms = await _apiService.getRoomsByHotel(hotelId, checkIn: checkIn, checkOut: checkOut, guests: guests);
-      return rooms;
+      // Only return rooms that belong to the current owner's hotels
+      if (_allRooms.isEmpty) {
+        await loadAllRooms();
+      }
+      return _allRooms.where((r) => r.hotelId == hotelId).toList();
     } catch (e) {
       print('HotelOwnerProvider: Error getting rooms: $e');
       throw e;

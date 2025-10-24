@@ -140,14 +140,22 @@ roomSchema.methods.checkAvailability = async function(checkIn, checkOut, guestCo
   }
   
   // Check overlapping bookings
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+  // Count bookings that overlap the requested period and consume inventory:
+  // - confirmed or checked_in
+  // - pending created within last 30 minutes (hold inventory temporarily)
   const overlappingBookings = await Booking.countDocuments({
     room: this._id,
-    status: { $in: ['confirmed', 'checked_in'] },
+    $and: [
+      { checkIn: { $lt: checkOutDate } },
+      { checkOut: { $gt: checkInDate } },
+    ],
     $or: [
-      {
-        checkIn: { $lt: new Date(checkOut) },
-        checkOut: { $gt: new Date(checkIn) }
-      }
+      { status: { $in: ['confirmed', 'checked_in'] } },
+      { status: 'pending', createdAt: { $gte: thirtyMinutesAgo } }
     ]
   });
   

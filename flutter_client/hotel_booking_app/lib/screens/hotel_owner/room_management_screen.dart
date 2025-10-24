@@ -29,12 +29,8 @@ class _RoomManagementScreenState extends State<RoomManagementScreen> {
 
   Future<void> _loadRooms() async {
     final provider = Provider.of<HotelOwnerProvider>(context, listen: false);
-    if (widget.hotel != null) {
-      await provider.getRoomsByHotel(widget.hotel!.id);
-    } else {
-      // Load all rooms for all hotels owned by this user
-      await provider.loadAllRooms();
-    }
+    // Always load only rooms owned by current user
+    await provider.loadAllRooms();
   }
 
   @override
@@ -88,6 +84,11 @@ class _RoomManagementScreenState extends State<RoomManagementScreen> {
             );
           }
 
+          final canManageThisHotel = widget.hotel == null
+              ? true
+              : Provider.of<HotelOwnerProvider>(context, listen: false)
+                  .isOwnedHotelId(widget.hotel!.id);
+
           final rooms = widget.hotel != null
               ? provider.allRooms.where((room) => room.hotelId == widget.hotel!.id).toList()
               : provider.allRooms;
@@ -117,11 +118,13 @@ class _RoomManagementScreenState extends State<RoomManagementScreen> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () => _navigateToAddRoom(),
+                    onPressed: canManageThisHotel ? () => _navigateToAddRoom() : null,
                     icon: const Icon(Icons.add),
                     label: Text(l10n.addRoom),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: canManageThisHotel
+                          ? Theme.of(context).primaryColor
+                          : Colors.grey,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,

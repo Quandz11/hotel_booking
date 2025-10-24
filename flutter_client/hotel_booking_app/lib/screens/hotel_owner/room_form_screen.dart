@@ -757,6 +757,18 @@ class _RoomFormScreenState extends State<RoomFormScreen> {
 
     try {
       final provider = Provider.of<HotelOwnerProvider>(context, listen: false);
+      // Ownership guard: only allow manage rooms of hotels owned by current user
+      final targetHotelId = widget.room?.hotelId ?? _selectedHotelId;
+      if (targetHotelId == null || !provider.isOwnedHotelId(targetHotelId)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bạn không có quyền thao tác trên khách sạn này'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() { _isLoading = false; });
+        return;
+      }
       
       // Prepare room data
       final roomData = {

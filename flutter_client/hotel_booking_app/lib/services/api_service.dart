@@ -422,6 +422,29 @@ class ApiService {
     }
   }
 
+  /// Get rooms for a hotel with availability and pricing for given dates/guests
+  Future<List<Room>> getHotelRoomsWithAvailability(
+    String hotelId, {
+    required DateTime checkIn,
+    required DateTime checkOut,
+    int guests = 1,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'checkIn': checkIn.toIso8601String(),
+        'checkOut': checkOut.toIso8601String(),
+        'guests': guests,
+      };
+
+      final response = await _dio.get('/rooms/hotel/$hotelId', queryParameters: queryParams);
+      final List<dynamic> roomData = response.data['rooms'] ?? [];
+      return roomData.map((json) => Room.fromJson(json)).toList();
+    } catch (e) {
+      print('❌ Error fetching rooms with availability: $e');
+      rethrow;
+    }
+  }
+
   // ========== HOTEL OWNER DASHBOARD METHODS ==========
 
   /// Get hotels owned by current user

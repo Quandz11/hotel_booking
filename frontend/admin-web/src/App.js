@@ -9,7 +9,6 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Hotels from './pages/hotels/Hotels';
 import Users from './pages/users/Users';
 import Bookings from './pages/bookings/Bookings';
-import Reviews from './pages/reviews/Reviews';
 import Payments from './pages/payments/Payments';
 import Reports from './pages/reports/Reports';
 import Settings from './pages/settings/Settings';
@@ -86,14 +85,6 @@ function App() {
           element={
             <ProtectedRoute>
               <Bookings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/reviews/*" 
-          element={
-            <ProtectedRoute>
-              <Reviews />
             </ProtectedRoute>
           } 
         />

@@ -581,24 +581,24 @@ class _BookingScreenState extends State<BookingScreen> {
                   _selectedPaymentMethod = value!;
                 });
               },
-            ),
-            RadioListTile<String>(
-              title: Row(
-                children: [
-                  const Icon(Icons.credit_card, color: Colors.purple),
-                  const SizedBox(width: 8),
-                  Text(l10n.stripe),
-                ],
-              ),
-              subtitle: const Text('Thanh toán qua thẻ tín dụng quốc tế'),
-              value: 'stripe',
-              groupValue: _selectedPaymentMethod,
-              onChanged: (value) {
-                setState(() {
-                  _selectedPaymentMethod = value!;
-                });
-              },
-            ),
+            ), 
+            // RadioListTile<String>(
+            //   title: Row(
+            //     children: [
+            //       const Icon(Icons.credit_card, color: Colors.purple),
+            //       const SizedBox(width: 8),
+            //       Text(l10n.stripe),
+            //     ],
+            //   ),
+            //   subtitle: const Text('Thanh toán qua thẻ tín dụng quốc tế'),
+            //   value: 'stripe',
+            //   groupValue: _selectedPaymentMethod,
+            //   onChanged: (value) {
+            //     setState(() {
+            //       _selectedPaymentMethod = value!;
+            //     });
+            //   },
+            // ),
           ],
         ),
       ),

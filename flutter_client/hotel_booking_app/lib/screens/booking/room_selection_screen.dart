@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/hotel.dart';
 import '../../models/room.dart';
+import '../../services/api_service.dart';
 import '../../l10n/app_localizations.dart';
 import 'booking_screen.dart';
 
@@ -31,6 +32,9 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
   DateTime _checkOut = DateTime.now().add(const Duration(days: 2));
   int _adults = 1;
   int _children = 0;
+  final ApiService _apiService = ApiService();
+  List<Room> _rooms = const [];
+  bool _loadingRooms = false;
 
   @override
   void initState() {
@@ -39,6 +43,9 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
     if (widget.checkOut != null) _checkOut = widget.checkOut!;
     _adults = widget.adults;
     _children = widget.children;
+    _rooms = List<Room>.from(widget.rooms);
+    // Initial fetch with current dates to include availability
+    _updateRoomSearch();
   }
 
   @override
@@ -60,13 +67,15 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
           
           // Room List
           Expanded(
-            child: widget.rooms.isEmpty
+            child: _loadingRooms
+                ? const Center(child: CircularProgressIndicator())
+                : _rooms.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: widget.rooms.length,
+                    itemCount: _rooms.length,
                     itemBuilder: (context, index) {
-                      final room = widget.rooms[index];
+                      final room = _rooms[index];
                       return _buildRoomCard(room);
                     },
                   ),
@@ -411,11 +420,43 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
                   const SizedBox(height: 12),
                 ],
                 
+                // Availability info
+                if (room.availability != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        room.availability!.available
+                            ? (room.availability!.availableRooms != null
+                                ? 'Còn ${room.availability!.availableRooms} phòng'
+                                : 'Còn phòng')
+                            : 'Hết phòng',
+                        style: TextStyle(
+                          color: room.availability!.available ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (room.availability!.available && (room.availability!.availableRooms ?? 0) <= 3)
+                        Text(
+                          'Sắp hết!',
+                          style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w600),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                
                 // Book Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: (_adults + _children) <= room.maxGuests ? () {
+                  child: Builder(builder: (context) {
+                    final capacityOk = (_adults + _children) <= room.maxGuests;
+                    final availOk = room.availability == null
+                        ? true
+                        : (room.availability!.available && (room.availability!.availableRooms ?? 0) > 0);
+                    final canBook = capacityOk && availOk;
+                    return ElevatedButton(
+                      onPressed: canBook ? () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -429,23 +470,26 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
                           ),
                         ),
                       );
-                    } : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: (_adults + _children) <= room.maxGuests 
-                          ? Theme.of(context).primaryColor 
-                          : Colors.grey,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      } : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canBook
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      (_adults + _children) <= room.maxGuests 
-                          ? 'Đặt phòng' 
-                          : 'Quá sức chứa (tối đa ${room.maxGuests} khách)',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                      child: Text(
+                        canBook
+                            ? 'Đặt phòng'
+                            : (!capacityOk
+                                ? 'Quá sức chứa (tối đa ${room.maxGuests} khách)'
+                                : 'Hết phòng'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),
@@ -479,13 +523,29 @@ class _RoomSelectionScreenState extends State<RoomSelectionScreen> {
     )} đ';
   }
 
-  void _updateRoomSearch() {
-    // TODO: Implement room search logic based on new dates
-    // This could call an API to get available rooms for the selected dates
-    // For now, this is a placeholder method
-    setState(() {
-      // Trigger rebuild with current rooms
-    });
+  Future<void> _updateRoomSearch() async {
+    setState(() => _loadingRooms = true);
+    try {
+      final totalGuests = _adults + _children;
+      final rooms = await _apiService.getHotelRoomsWithAvailability(
+        widget.hotel.id,
+        checkIn: _checkIn,
+        checkOut: _checkOut,
+        guests: totalGuests,
+      );
+      if (!mounted) return;
+      setState(() {
+        _rooms = rooms;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không tải được danh sách phòng: $e')),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() => _loadingRooms = false);
+    }
   }
 
   void _selectCheckInDate() async {

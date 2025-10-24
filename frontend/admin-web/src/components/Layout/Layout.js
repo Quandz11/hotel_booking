@@ -8,7 +8,6 @@ import {
   HomeOutlined,
   UserOutlined,
   CalendarOutlined,
-  StarOutlined,
   CreditCardOutlined,
   BarChartOutlined,
   SettingOutlined,
@@ -55,11 +54,6 @@ const Layout = ({ children }) => {
       key: '/bookings',
       icon: <CalendarOutlined />,
       label: t('navigation.bookings'),
-    },
-    {
-      key: '/reviews',
-      icon: <StarOutlined />,
-      label: t('navigation.reviews'),
     },
     {
       key: '/payments',
