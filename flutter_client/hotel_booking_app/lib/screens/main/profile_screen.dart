@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/login_screen.dart';
 import '../booking/customer_bookings_screen.dart';
 import 'edit_profile_screen.dart';
+import 'favorite_hotels_screen.dart';
+import 'notification_settings_screen.dart';
+import 'help_support_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -132,21 +137,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.favorite,
                     title: l10n.favorites,
                     onTap: () {
-                      // TODO: Navigate to favorites
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.comingSoon)),
-                      );
-                    },
-                  ),
-                  
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.payment,
-                    title: l10n.paymentMethods,
-                    onTap: () {
-                      // TODO: Navigate to payment methods
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.comingSoon)),
+                      if (user?.role != 'customer') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Only customers can manage favorite hotels.'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+                      context.read<FavoritesProvider>().ensureLoaded();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const FavoriteHotelsScreen(),
+                        ),
                       );
                     },
                   ),
@@ -156,9 +161,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.notifications,
                     title: l10n.notifications,
                     onTap: () {
-                      // TODO: Navigate to notifications settings
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.comingSoon)),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationSettingsScreen(),
+                        ),
                       );
                     },
                   ),
@@ -182,9 +189,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.help,
                     title: l10n.helpSupport,
                     onTap: () {
-                      // TODO: Navigate to help & support
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.comingSoon)),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpSupportScreen(),
+                        ),
                       );
                     },
                   ),
@@ -194,9 +203,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.privacy_tip,
                     title: l10n.privacyPolicy,
                     onTap: () {
-                      // TODO: Navigate to privacy policy
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.comingSoon)),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PrivacyPolicyScreen(),
+                        ),
                       );
                     },
                   ),

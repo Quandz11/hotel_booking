@@ -28,6 +28,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isOtpVerified = false;
 
   @override
   void dispose() {
@@ -37,11 +38,46 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _handleResetPassword() async {
+  Future<void> _handlePrimaryAction() async {
+    FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
+
+    if (!_isOtpVerified) {
+      final verified = await authProvider.verifyResetOtp(
+        widget.email,
+        _otpController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      if (verified) {
+        setState(() {
+          _isOtpVerified = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Reset code verified. Please enter a new password.'),
+            backgroundColor: AppTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (authProvider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage!),
+            backgroundColor: AppTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      return;
+    }
 
     final success = await authProvider.resetPassword(
       widget.email,
@@ -52,9 +88,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Navigate back to login screen
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.passwordResetSuccess),
@@ -62,17 +97,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } else {
-      // Show error message
-      if (authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+    } else if (authProvider.errorMessage != null) {
+      if (authProvider.errorMessage!
+          .toLowerCase()
+          .contains('reset code')) {
+        setState(() {
+          _isOtpVerified = false;
+        });
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage!),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -131,7 +170,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Enter the reset code sent to your email and create a new password',
+                    _isOtpVerified
+                        ? 'Enter your new password below.'
+                        : 'Enter the reset code sent to your email to continue.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppTheme.textSecondary,
                     ),
@@ -167,6 +208,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     hintText: '123456',
                     keyboardType: TextInputType.number,
                     prefixIcon: Icons.security,
+                    enabled: !_isOtpVerified,
+                    suffixIcon: _isOtpVerified
+                        ? const Icon(Icons.verified, color: AppTheme.successColor)
+                        : null,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.fieldRequiredMessage;
@@ -183,71 +228,73 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // New Password Field
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: l10n.newPassword,
-                    obscureText: _obscurePassword,
-                    prefixIcon: Icons.lock_outlined,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                        color: AppTheme.textSecondary,
+                  if (_isOtpVerified) ...[
+                    // New Password Field
+                    CustomTextField(
+                      controller: _passwordController,
+                      labelText: l10n.newPassword,
+                      obscureText: _obscurePassword,
+                      prefixIcon: Icons.lock_outlined,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                          color: AppTheme.textSecondary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.fieldRequiredMessage;
+                        }
+                        if (value.length < AppConstants.minPasswordLength) {
+                          return l10n.fieldTooShortMessage;
+                        }
+                        return null;
                       },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.fieldRequiredMessage;
-                      }
-                      if (value.length < AppConstants.minPasswordLength) {
-                        return l10n.fieldTooShortMessage;
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Confirm Password Field
-                  CustomTextField(
-                    controller: _confirmPasswordController,
-                    labelText: l10n.confirmPassword,
-                    obscureText: _obscureConfirmPassword,
-                    prefixIcon: Icons.lock_outlined,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                        color: AppTheme.textSecondary,
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Confirm Password Field
+                    CustomTextField(
+                      controller: _confirmPasswordController,
+                      labelText: l10n.confirmPassword,
+                      obscureText: _obscureConfirmPassword,
+                      prefixIcon: Icons.lock_outlined,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                          color: AppTheme.textSecondary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.fieldRequiredMessage;
+                        }
+                        if (value != _passwordController.text) {
+                          return l10n.passwordMismatchMessage;
+                        }
+                        return null;
                       },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.fieldRequiredMessage;
-                      }
-                      if (value != _passwordController.text) {
-                        return l10n.passwordMismatchMessage;
-                      }
-                      return null;
-                    },
-                  ),
+                    
+                    const SizedBox(height: 24),
+                  ],
                   
-                  const SizedBox(height: 24),
-                  
-                  // Reset Password Button
+                  // Primary Action Button
                   CustomButton(
-                    text: l10n.resetPassword,
-                    onPressed: _handleResetPassword,
-                    icon: Icons.check,
+                    text: _isOtpVerified ? l10n.resetPassword : 'Verify Code',
+                    onPressed: _handlePrimaryAction,
+                    icon: _isOtpVerified ? Icons.check : Icons.verified,
                   ),
                   
                   const SizedBox(height: 24),

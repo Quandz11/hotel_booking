@@ -16,6 +16,7 @@ class User {
   final bool smsNotifications;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<String> favoriteHotelIds;
   
   User({
     required this.id,
@@ -35,6 +36,7 @@ class User {
     this.smsNotifications = false,
     required this.createdAt,
     required this.updatedAt,
+    this.favoriteHotelIds = const [],
   });
   
   factory User.fromJson(Map<String, dynamic> json) {
@@ -60,6 +62,10 @@ class User {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt']) 
           : DateTime.now(),
+      favoriteHotelIds: (json['favoriteHotels'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
   
@@ -82,6 +88,7 @@ class User {
       'smsNotifications': smsNotifications,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'favoriteHotels': favoriteHotelIds,
     };
   }
   
@@ -120,6 +127,7 @@ class User {
     bool? smsNotifications,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<String>? favoriteHotelIds,
   }) {
     return User(
       id: id ?? this.id,
@@ -139,6 +147,7 @@ class User {
       smsNotifications: smsNotifications ?? this.smsNotifications,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      favoriteHotelIds: favoriteHotelIds ?? this.favoriteHotelIds,
     );
   }
 

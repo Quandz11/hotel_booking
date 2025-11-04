@@ -135,7 +135,7 @@ class ResetPasswordRequest {
     return {
       'email': email,
       'otp': otp,
-      'newPassword': newPassword,
+      'password': newPassword,
     };
   }
 }

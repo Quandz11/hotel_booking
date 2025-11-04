@@ -7,6 +7,7 @@ import 'providers/auth_provider.dart';
 import 'providers/hotel_provider.dart';
 import 'providers/hotel_owner_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/favorites_provider.dart';
 import 'services/api_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main/main_screen.dart';
@@ -27,6 +28,14 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: localeProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(
+          create: (_) => FavoritesProvider(),
+          update: (_, authProvider, favoritesProvider) {
+            favoritesProvider ??= FavoritesProvider();
+            favoritesProvider.updateAuth(authProvider);
+            return favoritesProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => HotelProvider()),
         ChangeNotifierProvider(create: (_) => HotelOwnerProvider()),
       ],

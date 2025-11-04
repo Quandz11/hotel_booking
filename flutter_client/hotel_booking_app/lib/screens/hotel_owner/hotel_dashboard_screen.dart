@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/booking.dart';
 import '../../models/hotel.dart';
 import '../../models/room.dart';
+import '../../widgets/language_switch_button.dart';
 import 'booking_management_screen.dart';
 import 'room_management_screen.dart';
 import 'hotel_management_screen.dart';
@@ -45,6 +46,9 @@ class _HotelDashboardScreenState extends State<HotelDashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const LanguageSwitchButton(
+            iconColor: Colors.white,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadDashboardData,

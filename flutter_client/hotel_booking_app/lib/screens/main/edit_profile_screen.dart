@@ -130,6 +130,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
 
     setState(() {
       _isLoading = true;
@@ -137,15 +138,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       // Prepare updated user data
-      final updatedData = {
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'address': _addressController.text.trim(),
-        'emailNotifications': _emailNotificationsEnabled,
-        'smsNotifications': _smsNotificationsEnabled,
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+      final phone = _phoneController.text.trim();
+      final address = _addressController.text.trim();
+
+      final updatedData = <String, dynamic>{
+        'firstName': firstName,
+        'lastName': lastName,
       };
+
+      if (phone.isNotEmpty) {
+        updatedData['phone'] = phone;
+      } else if ((user?.phone ?? '').isNotEmpty) {
+        updatedData['phone'] = null;
+      }
+
+      if (address.isNotEmpty) {
+        updatedData['address'] = {'street': address};
+      } else if ((user?.address ?? '').isNotEmpty) {
+        updatedData['address'] = null;
+      }
 
       // Call API to update profile
       final success = await authProvider.updateProfile(

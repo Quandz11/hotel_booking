@@ -258,6 +258,31 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
+
+  // Verify reset password OTP
+  Future<bool> verifyResetOtp(String email, String otp) async {
+    _setState(AuthState.loading);
+    _clearMessages();
+
+    try {
+      final request = VerifyOtpRequest(email: email, otp: otp);
+      final response = await _apiService.verifyResetOtp(request);
+
+      if (response.success) {
+        _setSuccess('Reset code verified. Please enter your new password.');
+        _setState(AuthState.unauthenticated);
+        return true;
+      } else {
+        _setError(response.message);
+        _setState(AuthState.unauthenticated);
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to verify reset code. Please try again.');
+      _setState(AuthState.unauthenticated);
+      return false;
+    }
+  }
   
   // Logout
   Future<void> logout() async {

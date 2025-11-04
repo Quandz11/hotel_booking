@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/hotel_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../../widgets/hotel_card.dart';
+import '../../widgets/language_switch_button.dart';
 import '../hotel/hotel_detail_screen.dart';
 import '../main/search_screen.dart';
 import '../booking/customer_bookings_screen.dart';
+import 'favorite_hotels_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +25,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // Fetch featured hotels when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HotelProvider>().fetchFeaturedHotels();
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.currentUser?.role == 'customer') {
+        context.read<FavoritesProvider>().ensureLoaded();
+      }
     });
   }
 
@@ -34,6 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: const [
+          LanguageSwitchButton(),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -237,25 +248,47 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
                 
-                return SizedBox(
-                  height: 280,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: hotelProvider.featuredHotels.length,
-                    itemBuilder: (context, index) {
-                      final hotel = hotelProvider.featuredHotels[index];
-                      return Container(
-                        width: 250,
-                        margin: EdgeInsets.only(
-                          right: index < hotelProvider.featuredHotels.length - 1 ? 16 : 0,
-                        ),
-                        child: HotelCard(
-                          hotel: hotel,
-                          onTap: () => _navigateToHotelDetail(hotel),
-                        ),
-                      );
-                    },
-                  ),
+                return Consumer2<AuthProvider, FavoritesProvider>(
+                  builder: (context, authProvider, favoritesProvider, _) {
+                    final canFavorite = authProvider.currentUser?.role == 'customer';
+
+                    return SizedBox(
+                      height: 280,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: hotelProvider.featuredHotels.length,
+                        itemBuilder: (context, index) {
+                          final hotel = hotelProvider.featuredHotels[index];
+                          return Container(
+                            width: 250,
+                            margin: EdgeInsets.only(
+                              right: index < hotelProvider.featuredHotels.length - 1 ? 16 : 0,
+                            ),
+                            child: HotelCard(
+                              hotel: hotel,
+                              onTap: () => _navigateToHotelDetail(hotel),
+                              showFavoriteButton: canFavorite,
+                              isFavorite: favoritesProvider.isFavorite(hotel.id),
+                              onToggleFavorite: () {
+                                favoritesProvider.toggleFavorite(hotel.id).then((result) {
+                                  if (result == null &&
+                                      favoritesProvider.errorMessage != null &&
+                                      context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(favoritesProvider.errorMessage!),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -333,11 +366,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showFavorites() {
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.comingSoon),
-        backgroundColor: Colors.orange,
+    final authProvider = context.read<AuthProvider>();
+
+    if (authProvider.currentUser?.role != 'customer') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login as a customer to view favorites.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    context.read<FavoritesProvider>().ensureLoaded();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FavoriteHotelsScreen(),
       ),
     );
   }

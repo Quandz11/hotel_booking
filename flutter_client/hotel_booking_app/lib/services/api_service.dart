@@ -210,6 +210,18 @@ class ApiService {
     }
   }
   
+  Future<AuthResponse> verifyResetOtp(VerifyOtpRequest request) async {
+    try {
+      final response = await _dio.post('/auth/verify-reset-otp', data: request.toJson());
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      return AuthResponse(
+        success: false,
+        message: e.response?.data['message'] ?? 'Failed to verify reset code',
+      );
+    }
+  }
+  
   Future<AuthResponse> resetPassword(ResetPasswordRequest request) async {
     try {
       final response = await _dio.post('/auth/reset-password', data: request.toJson());
@@ -1148,6 +1160,28 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Error sending chat message: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Hotel>> getFavoriteHotels(String userId) async {
+    try {
+      final response = await _dio.get('/users/$userId/favorites');
+      final favorites = response.data['favoriteHotels'] as List<dynamic>? ?? [];
+      return favorites.map((hotel) => Hotel.fromJson(hotel)).toList();
+    } catch (e) {
+      print('�?O Error fetching favorite hotels: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<String>> toggleFavoriteHotel(String userId, String hotelId) async {
+    try {
+      final response = await _dio.post('/users/$userId/favorites/$hotelId');
+      final ids = response.data['favoriteHotels'] as List<dynamic>? ?? [];
+      return ids.map((id) => id.toString()).toList();
+    } catch (e) {
+      print('�?O Error toggling favorite hotel: $e');
       rethrow;
     }
   }

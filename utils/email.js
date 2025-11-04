@@ -49,30 +49,25 @@ const sendEmailVerification = async (email, token, firstName) => {
   await transporter.sendMail(mailOptions);
 };
 
-// Send password reset email
-const sendPasswordReset = async (email, token, firstName) => {
+// Send password reset OTP email
+const sendPasswordResetOTP = async (email, otp, firstName) => {
   const transporter = createTransporter();
-  
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
   
   const mailOptions = {
     from: `"Hotel Booking" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'Password Reset - Hotel Booking System',
+    subject: 'Password Reset Code - Hotel Booking System',
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
         <h2 style="color: #2c3e50;">Password Reset Request</h2>
         <p>Hi ${firstName},</p>
-        <p>We received a request to reset your password. Click the button below to reset it:</p>
+        <p>Use the One-Time Password (OTP) below to reset your account password:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" 
-             style="background-color: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Reset Password
-          </a>
+          <div style="background-color: #f8f9fa; border: 2px dashed #e74c3c; padding: 20px; border-radius: 5px; display: inline-block;">
+            <h1 style="margin: 0; color: #e74c3c; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+          </div>
         </div>
-        <p>Or copy and paste this link in your browser:</p>
-        <p style="word-break: break-all; color: #7f8c8d;">${resetUrl}</p>
-        <p>This link will expire in 1 hour.</p>
+        <p>This code will expire in 10 minutes. Please enter it in the app to continue with your password reset.</p>
         <p>If you didn't request a password reset, please ignore this email.</p>
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
         <p style="color: #7f8c8d; font-size: 12px;">
@@ -192,7 +187,7 @@ const sendOTP = async (email, otp, firstName) => {
 
 module.exports = {
   sendEmailVerification,
-  sendPasswordReset,
+  sendPasswordResetOTP,
   sendBookingConfirmation,
   sendOTP
 };

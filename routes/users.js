@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query } = require('express-validator');
 const User = require('../models/User');
 const Hotel = require('../models/Hotel');
+const Room = require('../models/Room');
 const { authenticate, authorize, authorizeOwnerOrAdmin } = require('../middleware/auth');
 const { validate, asyncHandler } = require('../middleware/validation');
 
@@ -166,10 +167,35 @@ router.get('/:id/favorites', authenticate, asyncHandler(async (req, res) => {
     .populate({
       path: 'favoriteHotels',
       match: { isApproved: true, isActive: true },
-      select: 'name description address starRating images averageRating totalReviews'
-    });
+      select: 'name description address starRating images averageRating totalReviews startingPrice currency',
+      options: { lean: true },
+    })
+    .lean();
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const favoriteHotels = user.favoriteHotels || [];
+
+  for (const hotel of favoriteHotels) {
+    if (!hotel) continue;
+
+    const room = await Room.findOne({ hotel: hotel._id, isActive: true })
+      .select('basePrice currency')
+      .sort({ basePrice: 1 })
+      .lean();
+
+    if (room) {
+      hotel.startingPrice = room.basePrice;
+      hotel.currency = room.currency || hotel.currency || 'VND';
+    } else {
+      hotel.startingPrice = hotel.startingPrice || 0;
+      hotel.currency = hotel.currency || 'VND';
+    }
+  }
   
-  res.json({ favoriteHotels: user.favoriteHotels });
+  res.json({ favoriteHotels });
 }));
 
 // @desc    Get user statistics
@@ -389,3 +415,4 @@ router.get('/search', authenticate, authorize('admin'), [
 }));
 
 module.exports = router;
+

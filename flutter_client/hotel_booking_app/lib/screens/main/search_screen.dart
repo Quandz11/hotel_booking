@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/hotel.dart';
 import '../../services/api_service.dart';
 import '../hotel/hotel_detail_screen.dart';
 import 'chatbot_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/favorites_provider.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -619,121 +622,188 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildHotelCard(Hotel hotel) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HotelDetailScreen(hotel: hotel),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Consumer2<AuthProvider, FavoritesProvider>(
+      builder: (context, authProvider, favoritesProvider, _) {
+        final canFavorite = authProvider.currentUser?.role == 'customer';
+        final isFavorite = favoritesProvider.isFavorite(hotel.id);
+        final l10n = AppLocalizations.of(context)!;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
             children: [
-              // Hotel image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: hotel.images.isNotEmpty
-                    ? Image.network(
-                        hotel.images.first.url,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 80,
-                            height: 80,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.hotel),
-                          );
-                        },
-                      )
-                    : Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.hotel),
-                      ),
-              ),
-              const SizedBox(width: 16),
-              // Hotel details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hotel.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HotelDetailScreen(hotel: hotel),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${hotel.address.city}, ${hotel.address.country}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Hotel image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: hotel.images.isNotEmpty
+                            ? Image.network(
+                                hotel.images.first.url,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.hotel),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.hotel),
+                              ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Hotel details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hotel.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    '${hotel.address.city}, ${hotel.address.country}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Row(
+                                  children: List.generate(5, (index) {
+                                    return Icon(
+                                      index < (hotel.averageRating).round()
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      size: 16,
+                                      color: Colors.amber,
+                                    );
+                                  }),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${hotel.averageRating.toStringAsFixed(1)} (${hotel.totalReviews} reviews)',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              hotel.description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  '${_formatPrice(hotel.startingPrice)} ${hotel.currency.isNotEmpty ? hotel.currency : 'VND'}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '/ ${l10n.night}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        // Star rating (assuming 5-star scale based on averageRating)
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              index < (hotel.averageRating).round()
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 16,
-                              color: Colors.amber,
-                            );
-                          }),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${hotel.averageRating.toStringAsFixed(1)} (${hotel.totalReviews} reviews)',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              if (canFavorite)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.red,
+                    ),
+                    onPressed: () {
+                      favoritesProvider.toggleFavorite(hotel.id).then((result) {
+                        if (result == null &&
+                            favoritesProvider.errorMessage != null &&
+                            context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(favoritesProvider.errorMessage!),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      });
+                    },
+                  ),
+                ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

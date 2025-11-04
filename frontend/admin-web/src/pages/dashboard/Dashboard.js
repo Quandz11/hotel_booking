@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Row, Col, Card, Statistic, Typography, Table, Tag, Space, Progress } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Table, Tag, Space, Progress, Button } from 'antd';
 import {
   HomeOutlined,
   UserOutlined,
@@ -7,6 +7,7 @@ import {
   DollarOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -18,13 +19,22 @@ const { Title, Text } = Typography;
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { stats, loading } = useSelector((state) => state.dashboard);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     dispatch(fetchDashboardStats());
   }, [dispatch]);
 
   const { overview, recent, bookingStats, monthlyRevenue, topHotels } = stats;
+
+  const handleLanguageToggle = () => {
+    const nextLanguage = i18n.language === 'vi' ? 'en' : 'vi';
+    i18n.changeLanguage(nextLanguage);
+    localStorage.setItem('language', nextLanguage);
+  };
+
+  const languageButtonLabel =
+    i18n.language === 'vi' ? 'Switch to English' : 'Switch to Vietnamese';
 
   // Format number with K, M suffix
   const formatNumber = (num) => {
@@ -117,8 +127,19 @@ const Dashboard = () => {
 
   return (
     <div>
-      <Title level={2}>{t('dashboard.title')}</Title>
-      
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={2} style={{ marginBottom: 0 }}>
+            {t('dashboard.title')}
+          </Title>
+        </Col>
+        <Col>
+          <Button icon={<GlobalOutlined />} onClick={handleLanguageToggle}>
+            {languageButtonLabel}
+          </Button>
+        </Col>
+      </Row>
+
       {/* Overview Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {overviewCards.map((card, index) => (

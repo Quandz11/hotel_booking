@@ -37,8 +37,8 @@ const userSchema = new mongoose.Schema({
   emailVerificationToken: String,
   emailVerificationOTP: String,
   emailVerificationOTPExpires: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
+  passwordResetOTP: String,
+  passwordResetOTPExpires: Date,
   
   // Customer specific fields
   membershipTier: {
