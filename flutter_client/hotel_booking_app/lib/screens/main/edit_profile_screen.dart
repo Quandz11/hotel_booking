@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -362,6 +363,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 label: l10n.email,
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
+                readOnly: true,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.emailRequired;
@@ -380,6 +382,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 label: l10n.phoneNumber,
                 icon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'[0-9+\-\s\(\)]'),
+                  ),
+                ],
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
                     if (!RegExp(r'^\+?[\d\s\-\(\)]+$').hasMatch(value)) {
@@ -498,12 +505,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     String? Function(String?)? validator,
     TextInputType? keyboardType,
     int maxLines = 1,
+    bool readOnly = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       validator: validator,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      readOnly: readOnly,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

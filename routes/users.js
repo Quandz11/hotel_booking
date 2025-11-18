@@ -34,7 +34,10 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
 router.put('/:id', authenticate, [
   body('firstName').optional().notEmpty().trim(),
   body('lastName').optional().notEmpty().trim(),
-  body('phone').optional().isMobilePhone(),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .matches(/^\+?[0-9\s\-\(\)]+$/)
+    .withMessage('Please provide a valid phone number'),
   body('address.street').optional().trim(),
   body('address.city').optional().trim(),
   body('address.state').optional().trim(),

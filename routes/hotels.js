@@ -39,20 +39,29 @@ router.get('/', [
   query('minPrice').optional().isNumeric(),
   query('maxPrice').optional().isNumeric(),
   query('amenities').optional(),
-  query('sortBy').optional().isIn(['price', 'rating', 'name', 'createdAt'])
+  query('sortBy').optional().isIn(['price_low', 'price_high', 'rating', 'name', 'relevance'])
 ], validate, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
+  const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
+  const minRating = req.query.minRating ? parseFloat(req.query.minRating) : null;
+  const amenitiesFilter = req.query.amenities
+    ? req.query.amenities.split(',').map(a => a.trim().toLowerCase()).filter(Boolean)
+    : [];
   
   // Build query
   let query = { isApproved: true, isActive: true };
   
   // Search by name or description
   if (req.query.search) {
+    const searchRegex = { $regex: req.query.search, $options: 'i' };
     query.$or = [
-      { name: { $regex: req.query.search, $options: 'i' } },
-      { description: { $regex: req.query.search, $options: 'i' } }
+      { name: searchRegex },
+      { description: searchRegex },
+      { 'address.city': searchRegex },
+      { 'address.country': searchRegex }
     ];
   }
   
@@ -65,15 +74,22 @@ router.get('/', [
   if (req.query.starRating) {
     query.starRating = parseInt(req.query.starRating);
   }
+
+  if (minRating !== null && !isNaN(minRating)) {
+    query.averageRating = {
+      ...(query.averageRating || {}),
+      $gte: minRating
+    };
+  }
   
   // Filter by amenities
-  if (req.query.amenities) {
-    const amenities = req.query.amenities.split(',');
-    query.amenities = { $in: amenities };
+  if (amenitiesFilter.length) {
+    query.amenities = { $all: amenitiesFilter };
   }
   
   // Sort options
-  let sort = {};
+  let sort = { createdAt: -1 };
+  let priceSort = null;
   switch (req.query.sortBy) {
     case 'rating':
       sort = { averageRating: -1 };
@@ -81,8 +97,11 @@ router.get('/', [
     case 'name':
       sort = { name: 1 };
       break;
-    case 'price':
-      sort = { 'rooms.basePrice': 1 };
+    case 'price_low':
+      priceSort = 'asc';
+      break;
+    case 'price_high':
+      priceSort = 'desc';
       break;
     default:
       sort = { createdAt: -1 };
@@ -91,14 +110,12 @@ router.get('/', [
   const hotels = await Hotel.find(query)
     .populate('owner', 'firstName lastName')
     .sort(sort)
-    .skip(skip)
-    .limit(limit)
     .lean();
   
   // Get room price range for each hotel
   for (let hotel of hotels) {
     const rooms = await Room.find({ hotel: hotel._id, isActive: true })
-      .select('basePrice weekendPrice')
+      .select('basePrice weekendPrice currency')
       .sort({ basePrice: 1 });
     
     if (rooms.length > 0) {
@@ -107,16 +124,41 @@ router.get('/', [
         max: rooms[rooms.length - 1].basePrice
       };
       hotel.startingPrice = rooms[0].basePrice;
+      hotel.currency = rooms[0].currency || hotel.currency || 'VND';
     } else {
       hotel.startingPrice = 0;
+      hotel.currency = hotel.currency || 'VND';
     }
   }
-  
-  const total = await Hotel.countDocuments(query);
+
+  let filteredHotels = hotels;
+  if ((minPrice !== null && !isNaN(minPrice)) || (maxPrice !== null && !isNaN(maxPrice))) {
+    filteredHotels = filteredHotels.filter(hotel => {
+      const price = typeof hotel.startingPrice === 'number' ? hotel.startingPrice : 0;
+      if (minPrice !== null && !isNaN(minPrice) && price < minPrice) {
+        return false;
+      }
+      if (maxPrice !== null && !isNaN(maxPrice) && price > maxPrice) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  if (priceSort) {
+    filteredHotels.sort((a, b) => {
+      const priceA = typeof a.startingPrice === 'number' ? a.startingPrice : 0;
+      const priceB = typeof b.startingPrice === 'number' ? b.startingPrice : 0;
+      return priceSort === 'asc' ? priceA - priceB : priceB - priceA;
+    });
+  }
+
+  const total = filteredHotels.length;
+  const paginatedHotels = filteredHotels.slice(skip, skip + limit);
   
   res.json({
     success: true,
-    data: hotels,
+    data: paginatedHotels,
     pagination: {
       page,
       limit,

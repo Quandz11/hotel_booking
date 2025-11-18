@@ -15,7 +15,10 @@ const registerValidation = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('firstName').notEmpty().trim().withMessage('First name is required'),
   body('lastName').notEmpty().trim().withMessage('Last name is required'),
-  body('phone').isMobilePhone().withMessage('Please provide a valid phone number'),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .matches(/^\+?[0-9\s\-\(\)]+$/)
+    .withMessage('Please provide a valid phone number'),
   body('role').optional().isIn(['customer', 'hotel_owner']).withMessage('Invalid role')
 ];
 
@@ -73,6 +76,8 @@ router.post('/register', registerValidation, validate, asyncHandler(async (req, 
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      phone: user.phone,
+      address: user.address,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       avatar: user.avatar
@@ -113,11 +118,13 @@ router.post('/login', loginValidation, validate, asyncHandler(async (req, res) =
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      phone: user.phone,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       membershipTier: user.membershipTier,
       isApproved: user.isApproved,
-      avatar: user.avatar
+      avatar: user.avatar,
+      address: user.address
     },
     accessToken,
     refreshToken
@@ -190,6 +197,8 @@ router.post('/verify-otp', [
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      phone: user.phone,
+      address: user.address,
       role: user.role,
       isEmailVerified: user.isEmailVerified
     }

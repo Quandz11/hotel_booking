@@ -6,7 +6,7 @@ class AuthResponse {
   final String? accessToken;
   final String? refreshToken;
   final User? user;
-  final Map<String, dynamic>? errors;
+  final List<FieldError>? errors;
   
   AuthResponse({
     required this.success,
@@ -27,7 +27,7 @@ class AuthResponse {
       accessToken: json['accessToken'] ?? json['token'],
       refreshToken: json['refreshToken'],
       user: json['user'] != null ? User.fromJson(json['user']) : null,
-      errors: json['errors'],
+      errors: parseErrors(json['errors']),
     );
   }
   
@@ -38,7 +38,53 @@ class AuthResponse {
       'accessToken': accessToken,
       'refreshToken': refreshToken,
       'user': user?.toJson(),
-      'errors': errors,
+      'errors': errors?.map((error) => error.toJson()).toList(),
+    };
+  }
+
+  static List<FieldError>? parseErrors(dynamic errorData) {
+    if (errorData == null) return null;
+
+    if (errorData is List) {
+      return errorData.map((error) => FieldError.fromJson(error)).toList();
+    }
+
+    if (errorData is Map<String, dynamic>) {
+      return errorData.entries
+          .map((entry) => FieldError(field: entry.key, message: '${entry.value}'))
+          .toList();
+    }
+
+    return [FieldError(message: errorData.toString())];
+  }
+}
+
+class FieldError {
+  final String? field;
+  final String message;
+  final dynamic value;
+
+  FieldError({this.field, required this.message, this.value});
+
+  factory FieldError.fromJson(dynamic json) {
+    if (json is Map<String, dynamic>) {
+      return FieldError(
+        field: json['field']?.toString(),
+        message: json['message']?.toString() ?? '',
+        value: json['value'],
+      );
+    }
+
+    return FieldError(
+      message: json?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'field': field,
+      'message': message,
+      'value': value,
     };
   }
 }

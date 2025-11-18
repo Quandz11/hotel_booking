@@ -142,7 +142,7 @@ class ApiService {
       return AuthResponse(
         success: false,
         message: e.response?.data['message'] ?? 'Login failed',
-        errors: e.response?.data['errors'],
+        errors: AuthResponse.parseErrors(e.response?.data['errors']),
       );
     }
   }
@@ -155,7 +155,7 @@ class ApiService {
       return AuthResponse(
         success: false,
         message: e.response?.data['message'] ?? 'Registration failed',
-        errors: e.response?.data['errors'],
+        errors: AuthResponse.parseErrors(e.response?.data['errors']),
       );
     }
   }
@@ -181,7 +181,7 @@ class ApiService {
       return AuthResponse(
         success: false,
         message: e.response?.data['message'] ?? 'OTP verification failed',
-        errors: e.response?.data['errors'],
+        errors: AuthResponse.parseErrors(e.response?.data['errors']),
       );
     }
   }
@@ -230,7 +230,7 @@ class ApiService {
       return AuthResponse(
         success: false,
         message: e.response?.data['message'] ?? 'Password reset failed',
-        errors: e.response?.data['errors'],
+        errors: AuthResponse.parseErrors(e.response?.data['errors']),
       );
     }
   }
@@ -316,21 +316,31 @@ class ApiService {
   Future<List<Hotel>> getHotels({
     String? city,
     String? country,
+    String? search,
     double? minPrice,
     double? maxPrice,
     double? minRating,
     int? limit,
     int? page,
+    List<String>? amenities,
+    String? sortBy,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (city != null) queryParams['city'] = city;
       if (country != null) queryParams['country'] = country;
+      if (search != null) queryParams['search'] = search;
       if (minPrice != null) queryParams['minPrice'] = minPrice;
       if (maxPrice != null) queryParams['maxPrice'] = maxPrice;
       if (minRating != null) queryParams['minRating'] = minRating;
       if (limit != null) queryParams['limit'] = limit;
       if (page != null) queryParams['page'] = page;
+      if (amenities != null && amenities.isNotEmpty) {
+        queryParams['amenities'] = amenities.join(',');
+      }
+      if (sortBy != null && sortBy.isNotEmpty) {
+        queryParams['sortBy'] = sortBy;
+      }
 
       final response = await _dio.get('/hotels', queryParameters: queryParams);
       

@@ -6,6 +6,7 @@ import '../../config/app_theme.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/loading_overlay.dart';
+import '../../widgets/language_switch_button.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'verify_email_screen.dart';
@@ -45,7 +46,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Navigate to home screen (will be handled by main app routing)
       Navigator.of(context).pushReplacementNamed('/home');
     } else if (authProvider.isEmailVerificationPending) {
       // Navigate to email verification screen
@@ -56,17 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       );
-    } else {
-      // Show error message
-      if (authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 
@@ -87,7 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 60),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      LanguageSwitchButton(
+                        iconColor: AppTheme.primaryColor,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
                   
                   // Logo and App Name
                   Column(
@@ -130,6 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   
+                  if (authProvider.errorMessage != null &&
+                      authProvider.errorMessage!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildErrorBanner(authProvider.errorMessage!),
+                  ],
+                  
                   const SizedBox(height: 48),
                   
                   // Email Field
@@ -139,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintText: 'example@email.com',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
+                    onChanged: (_) => authProvider.clearMessages(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.fieldRequiredMessage;
@@ -149,6 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
+                  if (authProvider.fieldErrors['email'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['email']!),
                   
                   const SizedBox(height: 16),
                   
@@ -169,6 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
+                    onChanged: (_) => authProvider.clearMessages(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.fieldRequiredMessage;
@@ -176,6 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
+                  if (authProvider.fieldErrors['password'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['password']!),
                   
                   const SizedBox(height: 16),
                   
@@ -271,6 +280,51 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.errorColor.withOpacity(0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: AppTheme.errorColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppTheme.errorColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldErrorText(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppTheme.errorColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

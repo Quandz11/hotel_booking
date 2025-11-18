@@ -7,6 +7,7 @@ import '../../config/app_constants.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/loading_overlay.dart';
+import '../../widgets/language_switch_button.dart';
 import 'verify_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -69,7 +70,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Navigate to email verification screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => VerifyEmailScreen(
@@ -77,17 +77,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       );
-    } else {
-      // Show error message
-      if (authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 
@@ -103,6 +92,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppTheme.primaryColor,
+        actions: [
+          LanguageSwitchButton(
+            iconColor: AppTheme.primaryColor,
+          ),
+        ],
       ),
       body: LoadingOverlay(
         isLoading: authProvider.isLoading,
@@ -135,6 +129,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
+                  
+                  if (authProvider.errorMessage != null &&
+                      authProvider.errorMessage!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildErrorBanner(authProvider.errorMessage!),
+                  ],
                   
                   const SizedBox(height: 32),
                   
@@ -183,41 +183,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   
                   const SizedBox(height: 24),
+                  if (authProvider.fieldErrors['role'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['role']!),
+                  
                   
                   // Name Fields
                   Row(
                     children: [
                       Expanded(
-                        child: CustomTextField(
-                          controller: _firstNameController,
-                          labelText: l10n.firstName,
-                          prefixIcon: Icons.person_outlined,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.fieldRequiredMessage;
-                            }
-                            if (value.length < AppConstants.minNameLength) {
-                              return l10n.fieldTooShortMessage;
-                            }
-                            return null;
-                          },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomTextField(
+                              controller: _firstNameController,
+                              labelText: l10n.firstName,
+                              prefixIcon: Icons.person_outlined,
+                              onChanged: (_) => authProvider.clearMessages(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return l10n.fieldRequiredMessage;
+                                }
+                                if (value.length < AppConstants.minNameLength) {
+                                  return l10n.fieldTooShortMessage;
+                                }
+                                return null;
+                              },
+                            ),
+                            if (authProvider.fieldErrors['firstName'] != null)
+                              _buildFieldErrorText(authProvider.fieldErrors['firstName']!),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: CustomTextField(
-                          controller: _lastNameController,
-                          labelText: l10n.lastName,
-                          prefixIcon: Icons.person_outlined,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.fieldRequiredMessage;
-                            }
-                            if (value.length < AppConstants.minNameLength) {
-                              return l10n.fieldTooShortMessage;
-                            }
-                            return null;
-                          },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomTextField(
+                              controller: _lastNameController,
+                              labelText: l10n.lastName,
+                              prefixIcon: Icons.person_outlined,
+                              onChanged: (_) => authProvider.clearMessages(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return l10n.fieldRequiredMessage;
+                                }
+                                if (value.length < AppConstants.minNameLength) {
+                                  return l10n.fieldTooShortMessage;
+                                }
+                                return null;
+                              },
+                            ),
+                            if (authProvider.fieldErrors['lastName'] != null)
+                              _buildFieldErrorText(authProvider.fieldErrors['lastName']!),
+                          ],
                         ),
                       ),
                     ],
@@ -232,6 +251,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     hintText: 'example@email.com',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
+                    onChanged: (_) => authProvider.clearMessages(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.fieldRequiredMessage;
@@ -242,6 +262,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
+                  if (authProvider.fieldErrors['email'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['email']!),
                   
                   const SizedBox(height: 16),
                   
@@ -252,6 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     hintText: '+84 123 456 789',
                     keyboardType: TextInputType.phone,
                     prefixIcon: Icons.phone_outlined,
+                    onChanged: (_) => authProvider.clearMessages(),
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
                         if (!RegExp(r'^[\+]?[0-9\s\-\(\)]{10,15}$').hasMatch(value)) {
@@ -261,6 +284,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
+                  if (authProvider.fieldErrors['phone'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['phone']!),
                   
                   const SizedBox(height: 16),
                   
@@ -281,6 +306,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         });
                       },
                     ),
+                    onChanged: (_) => authProvider.clearMessages(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.fieldRequiredMessage;
@@ -291,6 +317,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
+                  if (authProvider.fieldErrors['password'] != null)
+                    _buildFieldErrorText(authProvider.fieldErrors['password']!),
                   
                   const SizedBox(height: 16),
                   
@@ -414,6 +442,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.errorColor.withOpacity(0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: AppTheme.errorColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppTheme.errorColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldErrorText(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppTheme.errorColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

@@ -19,6 +19,7 @@ class AuthProvider with ChangeNotifier {
   String? _errorMessage;
   String? _successMessage;
   String? _pendingVerificationEmail;
+  Map<String, String> _fieldErrors = {};
   
   AuthProvider() {
     // Initialize immediately when provider is created
@@ -32,6 +33,7 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
   String? get pendingVerificationEmail => _pendingVerificationEmail;
+  Map<String, String> get fieldErrors => Map.unmodifiable(_fieldErrors);
   
   bool get isLoading => _state == AuthState.loading;
   bool get isAuthenticated => _state == AuthState.authenticated;
@@ -100,7 +102,11 @@ class AuthProvider with ChangeNotifier {
           return true;
         }
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'Login failed',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.unauthenticated);
         return false;
       }
@@ -141,7 +147,13 @@ class AuthProvider with ChangeNotifier {
         _setSuccess('Registration successful! Please check your email for verification code.');
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty
+              ? response.message
+              : 'Registration failed. Please check your details.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.unauthenticated);
         return false;
       }
@@ -173,7 +185,11 @@ class AuthProvider with ChangeNotifier {
         _setSuccess('Email verified successfully!');
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'OTP verification failed.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.emailNotVerified);
         return false;
       }
@@ -196,7 +212,11 @@ class AuthProvider with ChangeNotifier {
         _setSuccess('Verification code sent to your email');
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'Failed to resend verification code.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         return false;
       }
     } catch (e) {
@@ -219,7 +239,11 @@ class AuthProvider with ChangeNotifier {
         _setState(AuthState.unauthenticated);
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'Failed to send password reset email.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.unauthenticated);
         return false;
       }
@@ -248,7 +272,11 @@ class AuthProvider with ChangeNotifier {
         _setState(AuthState.unauthenticated);
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'Password reset failed.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.unauthenticated);
         return false;
       }
@@ -273,7 +301,11 @@ class AuthProvider with ChangeNotifier {
         _setState(AuthState.unauthenticated);
         return true;
       } else {
-        _setError(response.message);
+        final fieldErrors = _mapFieldErrors(response.errors);
+        _setError(
+          response.message.isNotEmpty ? response.message : 'Failed to verify reset code.',
+          fieldErrors: fieldErrors.isNotEmpty ? fieldErrors : null,
+        );
         _setState(AuthState.unauthenticated);
         return false;
       }
@@ -343,27 +375,47 @@ class AuthProvider with ChangeNotifier {
   // Get error for external use
   String get error => _errorMessage ?? '';
   
+  Map<String, String> _mapFieldErrors(List<FieldError>? errors) {
+    final mapped = <String, String>{};
+    if (errors == null) return mapped;
+
+    for (final error in errors) {
+      final field = error.field;
+      if (field != null && field.isNotEmpty) {
+        mapped[field] = error.message;
+      }
+    }
+
+    return mapped;
+  }
+
   // Helper methods
   void _setState(AuthState newState) {
     _state = newState;
     notifyListeners();
   }
   
-  void _setError(String message) {
+  void _setError(String message, {Map<String, String>? fieldErrors}) {
     _errorMessage = message;
     _successMessage = null;
+    _fieldErrors.clear();
+    if (fieldErrors != null && fieldErrors.isNotEmpty) {
+      _fieldErrors.addAll(fieldErrors);
+    }
     notifyListeners();
   }
   
   void _setSuccess(String message) {
     _successMessage = message;
     _errorMessage = null;
+    _fieldErrors.clear();
     notifyListeners();
   }
   
   void _clearMessages() {
     _errorMessage = null;
     _successMessage = null;
+    _fieldErrors.clear();
     notifyListeners();
   }
   
